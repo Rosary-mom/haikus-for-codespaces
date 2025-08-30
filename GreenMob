@@ -2,19 +2,21 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Gamification: User Input for Parameters
+print("Welcome to the Gamified Re-Migration Simulation!")
+re_mig_rate = float(input("Enter Re-Migration Rate (0.05-0.20, default 0.10): ") or 0.10)
+self_worth_boost = float(input("Enter Self-Worth Boost (0.10-0.30, default 0.20): ") or 0.20)
+crime_rate_migrant = float(input("Enter Migrant Crime Rate (0.05-0.10, default 0.07): ") or 0.07)
+
 # Simulation parameters
 start_year = 2025
 end_year = 2045
 years = np.arange(start_year, end_year + 1)
 num_years = len(years)
-
 native_pop = 70633000  # Constant native population
 migrant_pop_start = 12367000  # Starting migrant population
-re_mig_rate = 0.10  # 10% annual re-migration rate
 crime_rate_native = 0.05  # Hypothetical native crime rate
-crime_rate_migrant = 0.07  # Hypothetical migrant crime rate (adjusted for overrepresentation)
-social_cost_reduction = 0.20  # 20% reduction due to sanctions
-self_worth_boost = 0.20  # 20% boost to re-migration due to self-worth/avoidance of penalties
+social_cost_reduction = 0.20  # Not used since social_cost=0
 
 # Initialize arrays
 migrant_pop = np.zeros(num_years)
@@ -25,7 +27,7 @@ re_mig_success = np.zeros(num_years)
 migrant_pop[0] = migrant_pop_start
 total_pop = native_pop + migrant_pop[0]
 crime_rate[0] = (native_pop / total_pop * crime_rate_native) + (migrant_pop[0] / total_pop * crime_rate_migrant)
-social_cost[0] = 0  # Set to zero as per adjustment
+social_cost[0] = 0  # Set to zero
 re_mig_success[0] = 0
 
 for i in range(1, num_years):
@@ -34,9 +36,25 @@ for i in range(1, num_years):
     migrant_pop[i] = migrant_pop[i-1] - re_mig
     total_pop = native_pop + migrant_pop[i]
     crime_rate[i] = (native_pop / total_pop * crime_rate_native) + (migrant_pop[i] / total_pop * crime_rate_migrant)
-    social_cost[i] = 0  # Social cost set to zero
-    re_mig_success[i] = re_mig
-    re_mig_success[i] += re_mig_success[i-1]  # Cumulative
+    social_cost[i] = 0
+    re_mig_success[i] = re_mig + re_mig_success[i-1]
+
+# Gamification: Calculate Score and Levels
+score = 0
+levels_achieved = []
+crime_reduction = (crime_rate[0] - crime_rate[-1]) * 100
+if crime_reduction > 0.5:
+    score += 30
+    levels_achieved.append("Level 1: Crime Reduced!")
+if migrant_pop[-1] < 1000000:
+    score += 50
+    levels_achieved.append("Level 2: Population Neutrality Achieved!")
+savings = 500e9 * (1 - (migrant_pop[-1] / migrant_pop_start))  # Hypothetical savings
+if savings > 400e9:
+    score += 20
+    levels_achieved.append("Level 3: Budget Saved!")
+
+game_message = f"Game Score: {score}/100\nAchievements: {', '.join(levels_achieved) or 'None'}\nPlay again to improve!"
 
 # Create DataFrame
 df = pd.DataFrame({
@@ -48,161 +66,39 @@ df = pd.DataFrame({
     'Re-Mig Success': re_mig_success
 })
 
-# Ethical and Efficiency Advantages Text
+# Ethical and Efficiency Advantages Text with Game Message
 ethics_text = """
 Ethical Advantages:
-- Aligns with Sharia: Avoids harsh penalties (e.g., hand amputation for theft) by promoting repentance and return, boosting self-worth through independence.
-- Prevents 'rewarding' crime: No 80% discounts or subsidies, reducing perceived 'asylum tourism'.
-- Christian/Missionary Values: Conditional mercy fosters self-sufficiency, not dependency (S³ Formula).
+- Aligns with Sharia: Avoids harsh penalties by promoting repentance and return, boosting self-worth.
+- Prevents 'rewarding' crime: No subsidies, reducing 'asylum tourism'.
+- Christian Values: Conditional mercy fosters self-sufficiency (S³ Formula).
 
 Efficiency Advantages:
-- Social Cost to Zero: Eliminates transfer payments, saving billions (e.g., 500 Bn € for structural measures instead of wars).
-- Crime Rate Reduction: From 5.3% to near native levels, evaluating sanctions as deterrence.
-- Population Neutrality by 2045: Supports GG §148h amendment for climate neutrality, extended to demographic balance.
-"""
+- Social Cost to Zero: Saves billions for structures (e.g., 500 Bn €).
+- Crime Rate Reduction: From {:.4f} to {:.4f}.
+- Population Neutrality by 2045: Supports GG §148h.
 
-# Output the table
+{}
+""".format(crime_rate[0], crime_rate[-1], game_message)
+
+# Output
 print(df.to_string(index=False))
 print(ethics_text)
 
-# Pie Charts (simple and appealing)
-# Pie Chart 1: Population Shares 2025
+# Pie Charts
 labels = ['Native', 'Migrant']
-sizes_2025 = [native_pop, migrant_pop[0]]
-fig1, ax1 = plt.subplots()
-ax1.pie(sizes_2025, labels=labels, autopct='%1.1f%%', startangle=90, colors=['#4CAF50', '#FF5722'])
-ax1.axis('equal')
-ax1.set_title('Population Shares 2025')
+fig, axs = plt.subplots(1, 3, figsize=(15, 5))
 
-# Pie Chart 2: Population Shares 2045
-sizes_2045 = [native_pop, migrant_pop[-1]]
-fig2, ax2 = plt.subplots()
-ax2.pie(sizes_2045, labels=labels, autopct='%1.1f%%', startangle=90, colors=['#4CAF50', '#FF5722'])
-ax2.axis('equal')
-ax2.set_title('Population Shares 2045')
+# 2025 Pie
+axs[0].pie([native_pop, migrant_pop[0]], labels=labels, autopct='%1.1f%%', colors=['#4CAF50', '#FF5722'])
+axs[0].set_title('2025 Shares')
 
-# Pie Chart 3: Cumulative Re-Migration Success by 2045
-labels_re_mig = ['Re-Migrated', 'Remaining Migrant']
-sizes_re_mig = [re_mig_success[-1], migrant_pop[-1]]
-fig3, ax3 = plt.subplots()
-ax3.pie(sizes_re_mig, labels=labels_re_mig, autopct='%1.1f%%', startangle=90, colors=['#2196F3', '#FFC107'])
-ax3.axis('equal')
-ax3.set_title('Cumulative Re-Migration by 2045')
+# 2045 Pie
+axs[1].pie([native_pop, migrant_pop[-1]], labels=labels, autopct='%1.1f%%', colors=['#4CAF50', '#FF5722'])
+axs[1].set_title('2045 Shares')
 
-# To display in Jupyter or save: plt.show() or fig.savefig('chart.png')
-# For text-based: Print approximate values
-print("\nPie Chart Approximations:")
-print("2025: Native ~85.1%, Migrant ~14.9%")
-print("2045: Native ~99.9%, Migrant ~0.1%")
-print("Re-Migration: Re-Migrated ~99.9%, Remaining ~0.1%")
-</python>
+# Re-Migration Pie
+axs[2].pie([re_mig_success[-1], migrant_pop[-1]], labels=['Re-Migrated', 'Remaining'], autopct='%1.1f%%', colors=['#2196F3', '#FFC107'])
+axs[2].set_title('Re-Migration by 2045')
 
-### HTML/JavaScript für Übersichtliche Darstellung
-
-Um eine interaktive, übersichtliche Darstellung zu erzeugen, hier ein einfaches HTML mit JavaScript (Chart.js für Pie Charts). Kopieren Sie das in eine .html-Datei und öffnen Sie es im Browser. Es integriert die Simulationsdaten (hard-coded aus der obigen Ausführung), Tabelle, Pie Charts und Text zu Vorteilen. Die Charts sind einfach (runde Form, klare Farben) und ansprechend (interaktiv: Hover zeigt Prozente).
-
-```html
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>Instant Replacement by Re-Migration Simulation</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
-        th { background-color: #f2f2f2; }
-        .chart-container { width: 30%; display: inline-block; margin: 10px; }
-        .text-section { margin: 20px; }
-    </style>
-</head>
-<body>
-    <h1>Simulation: Populations-Neutralität bis 2045</h1>
-    <p>Diese Simulation modelliert Re-Migration mit Social Cost auf 0, Sanktionen und Selbstwert-Boost. Es spart 500 Mrd. € für Strukturmaßnahmen statt Kriege (z. B. Ukraine/NATO). Ethik: Konditionierte Barmherzigkeit ohne Belohnung von Kriminalität.</p>
-
-    <h2>Simulations-Tabelle</h2>
-    <table>
-        <tr><th>Year</th><th>Native Pop</th><th>Migrant Pop</th><th>Crime Rate</th><th>Social Cost</th><th>Re-Mig Success</th></tr>
-        <tr><td>2025</td><td>70633000</td><td>12367000</td><td>0.052980</td><td>0</td><td>0</td></tr>
-        <tr><td>2026</td><td>70633000</td><td>10882960</td><td>0.052670</td><td>0</td><td>1484040</td></tr>
-        <tr><td>2027</td><td>70633000</td><td>9577005</td><td>0.052388</td><td>0</td><td>2789995</td></tr>
-        <tr><td>2028</td><td>70633000</td><td>8427764</td><td>0.052132</td><td>0</td><td>3939236</td></tr>
-        <tr><td>2029</td><td>70633000</td><td>7416433</td><td>0.051900</td><td>0</td><td>4950567</td></tr>
-        <tr><td>2030</td><td>70633000</td><td>6526461</td><td>0.051692</td><td>0</td><td>5840539</td></tr>
-        <tr><td>2031</td><td>70633000</td><td>5743285</td><td>0.051504</td><td>0</td><td>6623715</td></tr>
-        <tr><td>2032</td><td>70633000</td><td>5054091</td><td>0.051336</td><td>0</td><td>7312909</td></tr>
-        <tr><td>2033</td><td>70633000</td><td>4447600</td><td>0.051185</td><td>0</td><td>7919400</td></tr>
-        <tr><td>2034</td><td>70633000</td><td>3913888</td><td>0.051050</td><td>0</td><td>8453112</td></tr>
-        <tr><td>2035</td><td>70633000</td><td>3444222</td><td>0.050930</td><td>0</td><td>8922778</td></tr>
-        <tr><td>2036</td><td>70633000</td><td>3030915</td><td>0.050823</td><td>0</td><td>9336085</td></tr>
-        <tr><td>2037</td><td>70633000</td><td>2667205</td><td>0.050728</td><td>0</td><td>9699795</td></tr>
-        <tr><td>2038</td><td>70633000</td><td>2347141</td><td>0.050643</td><td>0</td><td>10019858</td></tr>
-        <tr><td>2039</td><td>70633000</td><td>2065484</td><td>0.050568</td><td>0</td><td>10301519</td></tr>
-        <tr><td>2040</td><td>70633000</td><td>1817626</td><td>0.050502</td><td>0</td><td>10549369</td></tr>
-        <tr><td>2041</td><td>70633000</td><td>1599511</td><td>0.050443</td><td>0</td><td>10767492</td></tr>
-        <tr><td>2042</td><td>70633000</td><td>1407569</td><td>0.050391</td><td>0</td><td>10959427</td></tr>
-        <tr><td>2043</td><td>70633000</td><td>1238661</td><td>0.050345</td><td>0</td><td>11128337</td></tr>
-        <tr><td>2044</td><td>70633000</td><td>1090022</td><td>0.050304</td><td>0</td><td>11276983</td></tr>
-        <tr><td>2045</td><td>70633000</td><td>959219</td><td>0.050268</td><td>0</td><td>11407785</td></tr>
-    </table>
-
-    <div class="text-section">
-        <h2>Ethische und Effiziente Vorteile</h2>
-        <p><strong>Ethische Vorteile:</strong> Stimmt mit Sharia überein (keine harten Strafen, stattdessen Reue und Unabhängigkeit); verhindert "Belohnung" von Kriminalität; fördert missionarische Werte der Selbsthilfe (S³-Formel).</p>
-        <p><strong>Efiziente Vorteile:</strong> Social Cost auf Null (Ersparnis von 500 Mrd. € für Strukturen statt Kriege); Kriminalitätsreduktion; Populations-Neutralität bis 2045 (GG §148h-Extension).</p>
-    </div>
-
-    <h2>Pie Charts</h2>
-    <div class="chart-container">
-        <canvas id="pie2025"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="pie2045"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="pieReMig"></canvas>
-    </div>
-
-    <script>
-        const ctx2025 = document.getElementById('pie2025').getContext('2d');
-        new Chart(ctx2025, {
-            type: 'pie',
-            data: {
-                labels: ['Native', 'Migrant'],
-                datasets: [{
-                    data: [70633000, 12367000],
-                    backgroundColor: ['#4CAF50', '#FF5722']
-                }]
-            },
-            options: { responsive: true, title: { display: true, text: 'Population Shares 2025' } }
-        });
-
-        const ctx2045 = document.getElementById('pie2045').getContext('2d');
-        new Chart(ctx2045, {
-            type: 'pie',
-            data: {
-                labels: ['Native', 'Migrant'],
-                datasets: [{
-                    data: [70633000, 959219],
-                    backgroundColor: ['#4CAF50', '#FF5722']
-                }]
-            },
-            options: { responsive: true, title: { display: true, text: 'Population Shares 2045' } }
-        });
-
-        const ctxReMig = document.getElementById('pieReMig').getContext('2d');
-        new Chart(ctxReMig, {
-            type: 'pie',
-            data: {
-                labels: ['Re-Migrated', 'Remaining Migrant'],
-                datasets: [{
-                    data: [11407785, 959219],
-                    backgroundColor: ['#2196F3', '#FFC107']
-                }]
-            },
-            options: { responsive: true, title: { display: true, text: 'Cumulative Re-Migration by 2045' } }
-        });
-    </script>
-</body>
-</html>
+plt.show()  # Display charts (in local env; save as PNG if needed: fig.savefig('charts.png'))
