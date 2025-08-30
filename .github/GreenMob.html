@@ -2,20 +2,113 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Re-Migration Simulation by ROSARY©®™, 2025 ff. </title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>GreenMob - Gamified Re-Migration Simulation</title>
     <style>
-        body { font-family: Arial; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
-        th { background-color: #f2f2f2; }
-        .chart-container { width: 30%; display: inline-block; margin: 10px; }
-        .text-section { margin: 20px; }
+        body { font-family: Arial; background: #f0f0f0; text-align: center; }
+        canvas { border: 1px solid #ddd; margin: 10px; }
+        #game-container { width: 800px; margin: auto; }
+        #score { font-size: 24px; color: green; }
+        #ethics { margin: 20px; padding: 10px; background: #e0f7fa; border-radius: 8px; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
     </style>
 </head>
 <body>
-    <h1>Simulation bis 2045</h1>
-    <!-- Tabelle und Charts wie zuvor, hard-coded Daten -->
-    <!-- ... (fügen Sie die Tabelle/Charts aus vorherigem Code ein) ... -->
+    <div id="game-container">
+        <h1>GreenMob Game: Re-Migration Simulation</h1>
+        <p>Click 'Next Level' to advance years. Achieve goals for score!</p>
+        <canvas id="pie2025" width="300" height="300"></canvas>
+        <canvas id="pie2045" width="300" height="300"></canvas>
+        <canvas id="pieReMig" width="300" height="300"></canvas>
+        <div id="score">Score: 0/100</div>
+        <button onclick="nextLevel()">Next Level (Year)</button>
+        <div id="level-info">Current Level (Year): 2025</div>
+        <div id="ethics">
+            <h2>Ethische und Effiziente Vorteile</h2>
+            <p><strong>Ethische:</strong> Sharia-konform (Reue statt Strafen); keine 'Belohnung' für Kriminalität; Selbsthilfe (S³).</p>
+            <p><strong>Effiziente:</strong> Social Cost 0 (500 Mrd. € Ersparnis); Crime-Reduktion; Neutralität bis 2045 (GG §148h).</p>
+        </div>
+    </div>
+    <script>
+        // Simulation Parameters (JS Version)
+        const startYear = 2025;
+        const endYear = 2045;
+        const years = Array.from({length: endYear - startYear + 1}, (_, i) => startYear + i);
+        const nativePop = 70633000;
+        let migrantPop = 12367000;
+        const reMigRate = 0.10;  // Fixed, or prompt user below
+        const selfWorthBoost = 0.20;
+        const crimeRateNative = 0.05;
+        const crimeRateMigrant = 0.07;
+
+        // Prompt for user input (gamification start)
+        const userReMigRate = parseFloat(prompt("Re-Migration Rate (0.05-0.20, default 0.10):") || 0.10);
+        const userSelfBoost = parseFloat(prompt("Self-Worth Boost (0.10-0.30, default 0.20):") || 0.20);
+        const userCrimeMigrant = parseFloat(prompt("Migrant Crime Rate (0.05-0.10, default 0.07):") || 0.07);
+
+        // Arrays for data
+        let migrantPops = new Array(years.length).fill(0);
+        let crimeRates = new Array(years.length).fill(0);
+        let reMigSuccesses = new Array(years.length).fill(0);
+        migrantPops[0] = migrantPop;
+        crimeRates[0] = (nativePop / (nativePop + migrantPop) * crimeRateNative) + (migrantPop / (nativePop + migrantPop) * userCrimeMigrant);
+        reMigSuccesses[0] = 0;
+
+        for (let i = 1; i < years.length; i++) {
+            const reMig = migrantPops[i-1] * userReMigRate * (1 + userSelfBoost);
+            migrantPops[i] = migrantPops[i-1] - reMig;
+            const total = nativePop + migrantPops[i];
+            crimeRates[i] = (nativePop / total * crimeRateNative) + (migrantPops[i] / total * userCrimeMigrant);
+            reMigSuccesses[i] = reMig + reMigSuccesses[i-1];
+        }
+
+        // Gamification: Score Calculation
+        let score = 0;
+        const crimeReduction = (crimeRates[0] - crimeRates[crimeRates.length - 1]) * 100;
+        if (crimeReduction > 0.5) score += 30;
+        if (migrantPops[migrantPops.length - 1] < 1000000) score += 50;
+        const savings = 500000000000 * (1 - (migrantPops[migrantPops.length - 1] / 12367000));
+        if (savings > 400000000000) score += 20;
+        document.getElementById('score').innerText = `Score: ${score}/100 - Achievements: ${crimeReduction > 0.5 ? 'Crime Reduced, ' : ''}${migrantPops[migrantPops.length - 1] < 1000000 ? 'Neutrality, ' : ''}${savings > 400000000000 ? 'Budget Saved' : ''}`;
+
+        // Canvas Charts (simple 2D drawing, like Noodle)
+        let currentLevel = 0;
+
+        function drawPie(canvasId, title, labels, data, colors) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            let startAngle = 0;
+            const total = data.reduce((a, b) => a + b, 0);
+            ctx.font = '16px Arial';
+            ctx.fillText(title, 10, 20);
+            for (let i = 0; i < data.length; i++) {
+                const angle = (data[i] / total) * 2 * Math.PI;
+                ctx.beginPath();
+                ctx.moveTo(150, 150);
+                ctx.arc(150, 150, 100, startAngle, startAngle + angle);
+                ctx.closePath();
+                ctx.fillStyle = colors[i];
+                ctx.fill();
+                startAngle += angle;
+                // Label
+                ctx.fillStyle = '#000';
+                ctx.fillText(labels[i] + ' ' + (data[i] / total * 100).toFixed(1) + '%', 10, 40 + i * 20);
+            }
+        }
+
+        // Initial Draw
+        drawPie('pie2025', '2025 Shares', ['Native', 'Migrant'], [nativePop, migrantPops[0]], ['#4CAF50', '#FF5722']);
+        drawPie('pie2045', '2045 Shares', ['Native', 'Migrant'], [nativePop, migrantPops[migrantPops.length - 1]], ['#4CAF50', '#FF5722']);
+        drawPie('pieReMig', 'Re-Migration 2045', ['Re-Migrated', 'Remaining'], [reMigSuccesses[reMigSuccesses.length - 1], migrantPops[migrantPops.length - 1]], ['#2196F3', '#FFC107']);
+
+        // Interaktion (Click for Next Level, like Noodle drawing)
+        function nextLevel() {
+            currentLevel = (currentLevel + 1) % years.length;
+            document.getElementById('level-info').innerText = `Current Level (Year): ${years[currentLevel]} | Migrant Pop: ${migrantPops[currentLevel].toLocaleString()}`;
+            // Simple animation: Flash score
+            document.getElementById('score').style.color = 'red';
+            setTimeout(() => document.getElementById('score').style.color = 'green', 500);
+        }
+    </script>
 </body>
 </html>
