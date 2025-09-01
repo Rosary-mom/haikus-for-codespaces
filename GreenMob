@@ -1,104 +1,132 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>GreenMob - Gamified Re-Migration Game</title>
+    <style>
+        body { font-family: Arial; background: #f0f0f2; text-align: center; margin: 20px; }
+        canvas { border: 1px solid #ccc; margin: 10px; cursor: pointer; }
+        #game-container { width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        #score { font-size: 24px; color: #4CAF50; }
+        #ethics { margin: 20px; padding: 10px; background: #e0f7fa; border-radius: 8px; }
+        button { padding: 10px 20px; background: #2196F3; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        button:hover { background: #1E88E5; }
+        #level-info { font-size: 18px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>GreenMob Game: Re-Migration Simulation</h1>
+        <p>Enter parameters, then click 'Next Level' to advance. Achieve goals for score!</p>
+        <canvas id="pie2025" width="300" height="300"></canvas>
+        <canvas id="pie2045" width="300" height="300"></canvas>
+        <canvas id="pieReMig" width="300" height="300"></canvas>
+        <div id="score">Score: 0/100</div>
+        <div id="level-info">Current Level (Year): 2025</div>
+        <button onclick="nextLevel()">Next Level (Year)</button>
+        <div id="ethics">
+            <h2>Ethische und Effiziente Vorteile</h2>
+            <p><strong>Ethische:</strong> Sharia-konform (Reue statt Strafen); keine 'Belohnung' für Kriminalität; Selbsthilfe (S³).</p>
+            <p><strong>Effiziente:</strong> Social Cost 0 (500 Mrd. € Ersparnis); Crime-Reduktion; Neutralität bis 2045 (GG §148h).</p>
+        </div>
+    </div>
+    <script>
+        // Simulation Parameters (JS Version)
+        const startYear = 2025;
+        const endYear = 2045;
+        const years = Array.from({length: endYear - startYear + 1}, (_, i) => startYear + i);
+        const nativePop = 70633000;
+        let migrantPop = 12367000;
+        const reMigRate = parseFloat(prompt("Re-Migration Rate (0.05-0.20, default 0.10):") || 0.10);
+        const selfWorthBoost = parseFloat(prompt("Self-Worth Boost (0.10-0.30, default 0.20):") || 0.20);
+        const crimeRateMigrant = parseFloat(prompt("Migrant Crime Rate (0.05-0.10, default 0.07):") || 0.07);
+        const crimeRateNative = 0.05;
 
-# Gamification: User Input for Parameters
-print("Welcome to the Gamified Re-Migration Simulation!")
-re_mig_rate = float(input("Enter Re-Migration Rate (0.05-0.20, default 0.10): ") or 0.10)
-self_worth_boost = float(input("Enter Self-Worth Boost (0.10-0.30, default 0.20): ") or 0.20)
-crime_rate_migrant = float(input("Enter Migrant Crime Rate (0.05-0.10, default 0.07): ") or 0.07)
+        // Arrays for data
+        let migrantPops = new Array(years.length).fill(0);
+        let crimeRates = new Array(years.length).fill(0);
+        let reMigSuccesses = new Array(years.length).fill(0);
+        migrantPops[0] = migrantPop;
+        crimeRates[0] = (nativePop / (nativePop + migrantPop) * crimeRateNative) + (migrantPop / (nativePop + migrantPop) * crimeRateMigrant);
+        reMigSuccesses[0] = 0;
 
-# Simulation parameters
-start_year = 2025
-end_year = 2045
-years = np.arange(start_year, end_year + 1)
-num_years = len(years)
-native_pop = 70633000  # Constant native population
-migrant_pop_start = 12367000  # Starting migrant population
-crime_rate_native = 0.05  # Hypothetical native crime rate
-social_cost_reduction = 0.20  # Not used since social_cost=0
+        for (let i = 1; i < years.length; i++) {
+            const reMig = migrantPops[i-1] * reMigRate * (1 + selfWorthBoost);
+            migrantPops[i] = migrantPops[i-1] - reMig;
+            const total = nativePop + migrantPops[i];
+            crimeRates[i] = (nativePop / total * crimeRateNative) + (migrantPops[i] / total * crimeRateMigrant);
+            reMigSuccesses[i] = reMig + reMigSuccesses[i-1];
+        }
 
-# Initialize arrays
-migrant_pop = np.zeros(num_years)
-crime_rate = np.zeros(num_years)
-social_cost = np.zeros(num_years)
-re_mig_success = np.zeros(num_years)
+        // Gamification: Score Calculation
+        let score = 0;
+        const crimeReduction = (crimeRates[0] - crimeRates[crimeRates.length - 1]) * 100;
+        let achievements = [];
+        if (crimeReduction > 0.5) {
+            score += 30;
+            achievements.push('Crime Reduced!');
+        }
+        if (migrantPops[migrantPops.length - 1] < 1000000) {
+            score += 50;
+            achievements.push('Neutrality Achieved!');
+        }
+        const savings = 500000000000 * (1 - (migrantPops[migrantPops.length - 1] / 12367000));
+        if (savings > 400000000000) {
+            score += 20;
+            achievements.push('Budget Saved!');
+        }
+        document.getElementById('score').innerText = `Score: ${score}/100 - Achievements: ${achievements.join(', ') || 'None'}`;
 
-migrant_pop[0] = migrant_pop_start
-total_pop = native_pop + migrant_pop[0]
-crime_rate[0] = (native_pop / total_pop * crime_rate_native) + (migrant_pop[0] / total_pop * crime_rate_migrant)
-social_cost[0] = 0  # Set to zero
-re_mig_success[0] = 0
+        let currentLevel = 0;
 
-for i in range(1, num_years):
-    # Apply re-migration with self-worth boost
-    re_mig = migrant_pop[i-1] * re_mig_rate * (1 + self_worth_boost)
-    migrant_pop[i] = migrant_pop[i-1] - re_mig
-    total_pop = native_pop + migrant_pop[i]
-    crime_rate[i] = (native_pop / total_pop * crime_rate_native) + (migrant_pop[i] / total_pop * crime_rate_migrant)
-    social_cost[i] = 0
-    re_mig_success[i] = re_mig + re_mig_success[i-1]
+        function drawPie(canvasId, title, labels, data, colors) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let startAngle = 0;
+            const total = data.reduce((a, b) => a + b, 0);
+            ctx.font = '16px Arial';
+            ctx.fillText(title, 10, 20);
+            for (let i = 0; i < data.length; i++) {
+                const angle = (data[i] / total) * 2 * Math.PI;
+                ctx.beginPath();
+                ctx.moveTo(150, 150);
+                ctx.arc(150, 150, 100, startAngle, startAngle + angle);
+                ctx.closePath();
+                ctx.fillStyle = colors[i];
+                ctx.fill();
+                startAngle += angle;
+                // Label with hover (simple text)
+                ctx.fillStyle = '#000';
+                ctx.fillText(labels[i] + ' ' + (data[i] / total * 100).toFixed(1) + '%', 10, 40 + i * 20);
+            }
+            // Add hover event for interactivity
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+                ctx.fillStyle = '#000';
+                ctx.fillText('Hover for details - Click canvas for info', 10, canvas.height - 10);
+            });
+        }
 
-# Gamification: Calculate Score and Levels
-score = 0
-levels_achieved = []
-crime_reduction = (crime_rate[0] - crime_rate[-1]) * 100
-if crime_reduction > 0.5:
-    score += 30
-    levels_achieved.append("Level 1: Crime Reduced!")
-if migrant_pop[-1] < 1000000:
-    score += 50
-    levels_achieved.append("Level 2: Population Neutrality Achieved!")
-savings = 500e9 * (1 - (migrant_pop[-1] / migrant_pop_start))  # Hypothetical savings
-if savings > 400e9:
-    score += 20
-    levels_achieved.append("Level 3: Budget Saved!")
+        // Initial Draw
+        drawPie('pie2025', '2025 Shares', ['Native', 'Migrant'], [nativePop, migrantPops[0]], ['#4CAF50', '#FF5722']);
+        drawPie('pie2045', '2045 Shares', ['Native', 'Migrant'], [nativePop, migrantPops[migrantPops.length - 1]], ['#4CAF50', '#FF5722']);
+        drawPie('pieReMig', 'Re-Migration 2045', ['Re-Migrated', 'Remaining'], [reMigSuccesses[reMigSuccesses.length - 1], migrantPops[migrantPops.length - 1]], ['#2196F3', '#FFC107']);
 
-game_message = f"Game Score: {score}/100\nAchievements: {', '.join(levels_achieved) or 'None'}\nPlay again to improve!"
-
-# Create DataFrame
-df = pd.DataFrame({
-    'Year': years,
-    'Native Pop': native_pop,
-    'Migrant Pop': migrant_pop,
-    'Crime Rate': crime_rate,
-    'Social Cost': social_cost,
-    'Re-Mig Success': re_mig_success
-})
-
-# Ethical and Efficiency Advantages Text with Game Message
-ethics_text = """
-Ethical Advantages:
-- Aligns with Sharia: Avoids harsh penalties by promoting repentance and return, boosting self-worth.
-- Prevents 'rewarding' crime: No subsidies, reducing 'asylum tourism'.
-- Christian Values: Conditional mercy fosters self-sufficiency (S³ Formula).
-
-Efficiency Advantages:
-- Social Cost to Zero: Saves billions for structures (e.g., 500 Bn €).
-- Crime Rate Reduction: From {:.4f} to {:.4f}.
-- Population Neutrality by 2045: Supports GG §148h.
-
-{}
-""".format(crime_rate[0], crime_rate[-1], game_message)
-
-# Output
-print(df.to_string(index=False))
-print(ethics_text)
-
-# Pie Charts
-labels = ['Native', 'Migrant']
-fig, axs = plt.subplots(1, 3, figsize=(15, 5))
-
-# 2025 Pie
-axs[0].pie([native_pop, migrant_pop[0]], labels=labels, autopct='%1.1f%%', colors=['#4CAF50', '#FF5722'])
-axs[0].set_title('2025 Shares')
-
-# 2045 Pie
-axs[1].pie([native_pop, migrant_pop[-1]], labels=labels, autopct='%1.1f%%', colors=['#4CAF50', '#FF5722'])
-axs[1].set_title('2045 Shares')
-
-# Re-Migration Pie
-axs[2].pie([re_mig_success[-1], migrant_pop[-1]], labels=['Re-Migrated', 'Remaining'], autopct='%1.1f%%', colors=['#2196F3', '#FFC107'])
-axs[2].set_title('Re-Migration by 2045')
-
-plt.show()  # Display charts (in local env; save as PNG if needed: fig.savefig('charts.png'))
+        function nextLevel() {
+            currentLevel = (currentLevel + 1) % years.length;
+            document.getElementById('level-info').innerText = `Current Level (Year): ${years[currentLevel]} | Migrant Pop: ${migrantPops[currentLevel].toLocaleString()}`;
+            // Simple animation: Flash score
+            const scoreEl = document.getElementById('score');
+            scoreEl.style.color = 'red';
+            setTimeout(() => scoreEl.style.color = '#4CAF50', 500);
+            // Sound placeholder (add audio tag if needed)
+            console.log("Level Up Sound!");
+        }
+    </script>
+</body>
+</html>
