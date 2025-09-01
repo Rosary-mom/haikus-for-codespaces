@@ -2,28 +2,32 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GreenMob - Gamified Re-Migration Game</title>
     <style>
         body { font-family: Arial; background: #f0f0f2; text-align: center; margin: 20px; }
-        canvas { border: 1px solid #ccc; margin: 10px; cursor: pointer; box-shadow: 0 0 5px rgba(0,0,0,0.2); transition: box-shadow 0.3s; }
-        canvas:hover { box-shadow: 0 0 15px rgba(0,0,0,0.3); }
-        #game-container { width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        canvas { border: 1px solid #ccc; margin: 10px; cursor: pointer; box-shadow: 0 0 5px rgba(0,0,0,0.2); transition: box-shadow 0.3s, transform 0.3s; }
+        canvas:hover { box-shadow: 0 0 15px rgba(0,0,0,0.3); transform: scale(1.05); }
+        #game-container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         #score { font-size: 24px; color: #4CAF50; transition: color 0.5s; }
-        #ethics { margin: 20px; padding: 10px; background: #e0f7fa; border-radius: 8px; }
-        button { padding: 10px 20px; background: #2196F3; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        #ethics { margin: 20px; padding: 10px; background: #e0f7fa; border-radius: 8px; text-align: left; }
+        button { padding: 10px 20px; background: #2196F3; color: white; border: none; cursor: pointer; border-radius: 5px; transition: background 0.3s; }
         button:hover { background: #1E88E5; }
         #level-info { font-size: 18px; margin: 10px; }
         #hover-info { font-size: 14px; color: #666; margin: 5px; }
+        .chart-row { display: flex; justify-content: space-around; flex-wrap: wrap; }
     </style>
-    <audio id="levelUp" src="level_up.mp3"></audio>  <!-- Upload a sound file to repo if desired -->
+    <audio id="levelUp" src="level_up.mp3"></audio>  <!-- Optional: Upload a MP3 for sound -->
 </head>
 <body>
     <div id="game-container">
         <h1>GreenMob Game: Re-Migration Simulation</h1>
         <p>Enter parameters, then click 'Next Level' to advance. Hover over charts for details!</p>
-        <canvas id="pieCurrent" width="300" height="300"></canvas>
-        <canvas id="pie2045" width="300" height="300"></canvas>
-        <canvas id="pieReMig" width="300" height="300"></canvas>
+        <div class="chart-row">
+            <canvas id="pieCurrent" width="300" height="300"></canvas>
+            <canvas id="pie2045" width="300" height="300"></canvas>
+            <canvas id="pieReMig" width="300" height="300"></canvas>
+        </div>
         <div id="score">Score: 0/100</div>
         <div id="level-info">Current Level (Year): 2025</div>
         <div id="hover-info">Hover over a chart to see details</div>
@@ -101,13 +105,13 @@
                 ctx.closePath();
                 ctx.fillStyle = colors[i];
                 ctx.fill();
-                startAngle += angle;
-                // Improved Label
-                const labelAngle = startAngle - angle / 2;
-                const labelX = 150 + 70 * Math.cos(labelAngle);
-                const labelY = 150 + 70 * Math.sin(labelAngle);
+                // Improved Label in pie
+                const labelAngle = startAngle + angle / 2;
+                const labelX = 150 + 60 * Math.cos(labelAngle);
+                const labelY = 150 + 60 * Math.sin(labelAngle);
                 ctx.fillStyle = '#fff';
                 ctx.fillText((data[i] / total * 100).toFixed(1) + '%', labelX - 15, labelY + 5);
+                startAngle += angle;
             }
             // Hover event for interactivity
             canvas.addEventListener('mousemove', (e) => {
@@ -134,7 +138,7 @@
         function nextLevel() {
             currentLevel = (currentLevel + 1) % years.length;
             document.getElementById('level-info').innerText = `Current Level (Year): ${years[currentLevel]} | Migrant Pop: ${migrantPops[currentLevel].toLocaleString()}`;
-            // Redraw current pie for dynamic update
+            // Redraw current pie dynamically
             drawPie('pieCurrent', `Current Year (${years[currentLevel]}) Shares`, ['Native', 'Migrant'], [nativePop, migrantPops[currentLevel]], ['#4CAF50', '#FF5722']);
             // Flash animation
             const scoreEl = document.getElementById('score');
