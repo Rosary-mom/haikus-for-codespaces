@@ -5,21 +5,23 @@
     <title>GreenMob - Gamified Re-Migration Game</title>
     <style>
         body { font-family: Arial; background: #f0f0f2; text-align: center; margin: 20px; }
-        canvas { border: 1px solid #ccc; margin: 10px; cursor: pointer; }
+        canvas { border: 1px solid #ccc; margin: 10px; cursor: pointer; box-shadow: 0 0 5px rgba(0,0,0,0.2); transition: box-shadow 0.3s; }
+        canvas:hover { box-shadow: 0 0 15px rgba(0,0,0,0.3); }
         #game-container { width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        #score { font-size: 24px; color: #4CAF50; }
+        #score { font-size: 24px; color: #4CAF50; transition: color 0.5s; }
         #ethics { margin: 20px; padding: 10px; background: #e0f7fa; border-radius: 8px; }
         button { padding: 10px 20px; background: #2196F3; color: white; border: none; cursor: pointer; border-radius: 5px; }
         button:hover { background: #1E88E5; }
         #level-info { font-size: 18px; margin: 10px; }
         #hover-info { font-size: 14px; color: #666; margin: 5px; }
     </style>
+    <audio id="levelUp" src="level_up.mp3"></audio>  <!-- Upload a sound file to repo if desired -->
 </head>
 <body>
     <div id="game-container">
         <h1>GreenMob Game: Re-Migration Simulation</h1>
         <p>Enter parameters, then click 'Next Level' to advance. Hover over charts for details!</p>
-        <canvas id="pie2025" width="300" height="300"></canvas>
+        <canvas id="pieCurrent" width="300" height="300"></canvas>
         <canvas id="pie2045" width="300" height="300"></canvas>
         <canvas id="pieReMig" width="300" height="300"></canvas>
         <div id="score">Score: 0/100</div>
@@ -28,8 +30,10 @@
         <button onclick="nextLevel()">Next Level (Year)</button>
         <div id="ethics">
             <h2>Ethische und Effiziente Vorteile</h2>
-            <p><strong>Ethische:</strong> Sharia-konform (Reue statt Strafen); keine 'Belohnung' für Kriminalität; Selbsthilfe (S³-Formel: Selbst-Versorgung, Selbst-Verwaltung, Selbst-Verbreitung).</p>
-            <p><strong>Efiziente:</strong> Social Cost auf Null (Ersparnis von 500 Mrd. € für Strukturen statt Kriege); Kriminalitätsreduktion; Populations-Neutralität bis 2045 (GG §148h-Extension).</p>
+            <ul>
+                <li><strong>Ethische:</strong> Sharia-konform (Reue statt Strafen); keine 'Belohnung' für Kriminalität; Selbsthilfe (S³-Formel: Selbst-Versorgung, Selbst-Verwaltung, Selbst-Verbreitung).</li>
+                <li><strong>Efiziente:</strong> Social Cost auf Null (Ersparnis von 500 Mrd. € für Strukturen statt Kriege); Kriminalitätsreduktion; Populations-Neutralität bis 2045 (GG §148h-Extension).</li>
+            </ul>
         </div>
     </div>
     <script>
@@ -98,40 +102,47 @@
                 ctx.fillStyle = colors[i];
                 ctx.fill();
                 startAngle += angle;
-                // Label
-                ctx.fillStyle = '#000';
-                ctx.fillText(labels[i] + ' ' + (data[i] / total * 100).toFixed(1) + '%', 10, 40 + i * 20);
+                // Improved Label
+                const labelAngle = startAngle - angle / 2;
+                const labelX = 150 + 70 * Math.cos(labelAngle);
+                const labelY = 150 + 70 * Math.sin(labelAngle);
+                ctx.fillStyle = '#fff';
+                ctx.fillText((data[i] / total * 100).toFixed(1) + '%', labelX - 15, labelY + 5);
             }
-            // Add hover event for interactivity
+            // Hover event for interactivity
             canvas.addEventListener('mousemove', (e) => {
                 const rect = canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
+                const distance = Math.sqrt((x - 150)**2 + (y - 150)**2);
                 let hoverText = 'Hover for details';
-                // Simple hover detection (check if over pie)
-                if (Math.sqrt((x - 150)**2 + (y - 150)**2) < 100) {
-                    hoverText = 'Chart Info: Click for more';
+                if (distance < 100) {
+                    hoverText = `Total: ${total.toLocaleString()} - Click for more`;
                 }
                 document.getElementById('hover-info').innerText = hoverText;
             });
             canvas.addEventListener('click', (e) => {
-                alert('Chart clicked! Details: ' + title + ' - Data: ' + data.join(', '));
+                alert(`${title} Details: ${labels.join(', ')} - Values: ${data.map(v => v.toLocaleString()).join(', ')}`);
             });
         }
 
         // Initial Draw
-        drawPie('pie2025', '2025 Shares', ['Native', 'Migrant'], [nativePop, migrantPops[0]], ['#4CAF50', '#FF5722']);
+        drawPie('pieCurrent', 'Current Year Shares', ['Native', 'Migrant'], [nativePop, migrantPops[0]], ['#4CAF50', '#FF5722']);
         drawPie('pie2045', '2045 Shares', ['Native', 'Migrant'], [nativePop, migrantPops[migrantPops.length - 1]], ['#4CAF50', '#FF5722']);
         drawPie('pieReMig', 'Re-Migration 2045', ['Re-Migrated', 'Remaining'], [reMigSuccesses[reMigSuccesses.length - 1], migrantPops[migrantPops.length - 1]], ['#2196F3', '#FFC107']);
 
         function nextLevel() {
             currentLevel = (currentLevel + 1) % years.length;
             document.getElementById('level-info').innerText = `Current Level (Year): ${years[currentLevel]} | Migrant Pop: ${migrantPops[currentLevel].toLocaleString()}`;
-            // Simple animation: Flash score
+            // Redraw current pie for dynamic update
+            drawPie('pieCurrent', `Current Year (${years[currentLevel]}) Shares`, ['Native', 'Migrant'], [nativePop, migrantPops[currentLevel]], ['#4CAF50', '#FF5722']);
+            // Flash animation
             const scoreEl = document.getElementById('score');
             scoreEl.style.color = 'red';
             setTimeout(() => scoreEl.style.color = '#4CAF50', 500);
-            // Sound placeholder (add <audio id="levelUp" src="level_up.mp3"></audio> and document.getElementById('levelUp').play())
+            // Sound
+            const audio = document.getElementById('levelUp');
+            if (audio) audio.play();
             console.log("Level Up Sound!");
         }
     </script>
