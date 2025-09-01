@@ -12,22 +12,24 @@
         button { padding: 10px 20px; background: #2196F3; color: white; border: none; cursor: pointer; border-radius: 5px; }
         button:hover { background: #1E88E5; }
         #level-info { font-size: 18px; margin: 10px; }
+        #hover-info { font-size: 14px; color: #666; margin: 5px; }
     </style>
 </head>
 <body>
     <div id="game-container">
         <h1>GreenMob Game: Re-Migration Simulation</h1>
-        <p>Enter parameters, then click 'Next Level' to advance. Achieve goals for score!</p>
+        <p>Enter parameters, then click 'Next Level' to advance. Hover over charts for details!</p>
         <canvas id="pie2025" width="300" height="300"></canvas>
         <canvas id="pie2045" width="300" height="300"></canvas>
         <canvas id="pieReMig" width="300" height="300"></canvas>
         <div id="score">Score: 0/100</div>
         <div id="level-info">Current Level (Year): 2025</div>
+        <div id="hover-info">Hover over a chart to see details</div>
         <button onclick="nextLevel()">Next Level (Year)</button>
         <div id="ethics">
             <h2>Ethische und Effiziente Vorteile</h2>
-            <p><strong>Ethische:</strong> Sharia-konform (Reue statt Strafen); keine 'Belohnung' für Kriminalität; Selbsthilfe (S³).</p>
-            <p><strong>Effiziente:</strong> Social Cost 0 (500 Mrd. € Ersparnis); Crime-Reduktion; Neutralität bis 2045 (GG §148h).</p>
+            <p><strong>Ethische:</strong> Sharia-konform (Reue statt Strafen); keine 'Belohnung' für Kriminalität; Selbsthilfe (S³-Formel: Selbst-Versorgung, Selbst-Verwaltung, Selbst-Verbreitung).</p>
+            <p><strong>Efiziente:</strong> Social Cost auf Null (Ersparnis von 500 Mrd. € für Strukturen statt Kriege); Kriminalitätsreduktion; Populations-Neutralität bis 2045 (GG §148h-Extension).</p>
         </div>
     </div>
     <script>
@@ -38,8 +40,8 @@
         const nativePop = 70633000;
         let migrantPop = 12367000;
         const reMigRate = parseFloat(prompt("Re-Migration Rate (0.05-0.20, default 0.10):") || 0.10);
-        const selfWorthBoost = parseFloat(prompt("Self-Worth Boost (0.10-0.30, default 0.20):") or 0.20);
-        const crimeRateMigrant = parseFloat(prompt("Migrant Crime Rate (0.05-0.10, default 0.07):") or 0.07);
+        const selfWorthBoost = parseFloat(prompt("Self-Worth Boost (0.10-0.30, default 0.20):") || 0.20);
+        const crimeRateMigrant = parseFloat(prompt("Migrant Crime Rate (0.05-0.10, default 0.07):") || 0.07);
         const crimeRateNative = 0.05;
 
         // Arrays for data
@@ -96,19 +98,24 @@
                 ctx.fillStyle = colors[i];
                 ctx.fill();
                 startAngle += angle;
-                // Label with hover (simple text)
+                // Label
                 ctx.fillStyle = '#000';
                 ctx.fillText(labels[i] + ' ' + (data[i] / total * 100).toFixed(1) + '%', 10, 40 + i * 20);
             }
             // Add hover event for interactivity
             canvas.addEventListener('mousemove', (e) => {
-                const rect = canvas.getBoundingRect();
+                const rect = canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
-                ctx.fillStyle = '#000';
-                ctx.fillText('Hover for details - Click canvas for info', 10, canvas.height - 10);
+                let hoverText = 'Hover for details';
+                // Simple hover detection (check if over pie)
+                if (Math.sqrt((x - 150)**2 + (y - 150)**2) < 100) {
+                    hoverText = 'Chart Info: Click for more';
+                }
+                document.getElementById('hover-info').innerText = hoverText;
+            });
+            canvas.addEventListener('click', (e) => {
+                alert('Chart clicked! Details: ' + title + ' - Data: ' + data.join(', '));
             });
         }
 
@@ -124,7 +131,7 @@
             const scoreEl = document.getElementById('score');
             scoreEl.style.color = 'red';
             setTimeout(() => scoreEl.style.color = '#4CAF50', 500);
-            // Sound placeholder (add audio tag if needed)
+            // Sound placeholder (add <audio id="levelUp" src="level_up.mp3"></audio> and document.getElementById('levelUp').play())
             console.log("Level Up Sound!");
         }
     </script>
